@@ -7,6 +7,11 @@ which carry the full historical notes for versions predating this file.
 
 ## [Unreleased]
 
+- `code_manifest.json` now detects `backward()`, `.to(...)`, `.item()`,
+  `.cpu()` and `.numpy()` when they are called on an expression, such as
+  `scaler.scale(loss).backward()`, `batch["x"].to(device)` or
+  `loss.detach().item()`.
+
 ## [0.5.2] - Unreleased
 
 - Fixed home-directory expansion in `logs_dir` values supplied through YAML,

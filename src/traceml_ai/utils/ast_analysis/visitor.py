@@ -185,6 +185,12 @@ class PatternVisitor(ast.NodeVisitor):
             self._check_distributed_sampler(node, name)
             self._check_set_epoch(node, name)
             self._check_wrapper_calls(node, name)
+        elif isinstance(node.func, ast.Attribute):
+            method = node.func.attr
+            self._check_sync_calls(node, method)
+            self._check_device_transfer(node, method)
+            self._check_train_loop_flags(node, method)
+            self._check_set_epoch(node, method)
         self.generic_visit(node)
 
     def visit_Assign(self, node: ast.Assign) -> None:  # noqa: N802

@@ -51,3 +51,30 @@ def test_cudnn_benchmark_enabled_is_reported(tmp_path) -> None:
     manifest = build_code_manifest(analyze_script(str(script)))
 
     assert manifest["precision"]["cudnn_benchmark"] is True
+
+
+def test_method_calls_on_expressions_are_detected(tmp_path) -> None:
+    script = tmp_path / "train.py"
+    script.write_text(
+        "def train(model, loader, optimizer, scaler, device):\n"
+        "    for batch in loader:\n"
+        "        x = batch['x'].to(device, non_blocking=True)\n"
+        "        loss = model(x).pow(2).mean()\n"
+        "        scaler.scale(loss).backward()\n"
+        "        scaler.step(optimizer)\n"
+        "        print(loss.detach().item())\n"
+        "        preds = model(x).argmax(1).cpu().numpy()\n",
+        encoding="utf-8",
+    )
+
+    manifest = build_code_manifest(analyze_script(str(script)))
+
+    assert manifest["train_loop"]["backward_detected"] is True
+    assert manifest["device_transfer"] == {
+        "to_device_detected": True,
+        "non_blocking_used": True,
+    }
+    sync = manifest["sync_calls_in_train_loop"]
+    assert sync["item_calls"] == 1
+    assert sync["cpu_calls"] == 1
+    assert sync["numpy_calls"] == 1
